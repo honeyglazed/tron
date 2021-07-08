@@ -1,0 +1,8 @@
+# ignore javascript
+*.js
+
+# ignore build
+/node_modules
+
+# ignore env variables
+.env
