@@ -1,5 +1,6 @@
 # ignore javascript
 *.js
+!webpack.config.js
 
 # ignore build
 node_modules
