@@ -2,7 +2,7 @@
 
 import { io } from "socket.io-client";
 
-const socket = io('localhost:3000');
+const socket = io('127.0.0.1:3000');
 const game_screen: HTMLElement = document.getElementById('gameScreen') as HTMLElement;
 const BG_COLOUR: string = '#231f20';
 const SPEED_FACTOR: number = 5;
@@ -26,6 +26,10 @@ var arrow_keys_handler = function (e: KeyboardEvent) {
 };
 window.addEventListener("keydown", arrow_keys_handler, false);
 
+console.log("Connected=", socket.active);
+
+socket.on("init", (arg) => console.log("Got this: ", arg));
+
 interface GameState {
     grid_size: number;
     players: Array<GamePlayer>;
@@ -44,7 +48,7 @@ interface GamePlayer {
 
 let grid: GameState = {
     grid_size: 600, players: [
-        { x: 0, y: 0, dx: 0, dy: 0, area: [[0, 0]], color: 'red', is_alive: false }
+        { x: 0, y: 0, dx: 0, dy: 0, area: [[0, 0]], color: 'green', is_alive: false }
     ], is_finish: false
 };
 
@@ -95,7 +99,6 @@ function loop() {
     UpdateGame(grid);
     RenderGame(ctx, grid);
     requestAnimationFrame(loop);
-    console.log("Hello");
 }
 
 loop();
