@@ -1,18 +1,21 @@
-// Client
-
 import { io } from "socket.io-client";
 
 const socket = io('127.0.0.1:3000');
 const game_screen: HTMLElement = document.getElementById('gameScreen') as HTMLElement;
+const join_game_btn: HTMLElement = document.getElementById('joinGame') as HTMLElement;
+const create_game_btn: HTMLElement = document.getElementById('createGame') as HTMLElement;
+const game_alert: HTMLElement = document.getElementById('gameAlert') as HTMLElement;
+const reset_game_btn: HTMLElement = document.getElementById('resetGame') as HTMLElement;
 const BG_COLOUR: string = '#231f20';
-const SPEED_FACTOR: number = 5;
 const TILE_SIZE: number = 10;
+const GRID_SIZE: number = 600;
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-let max_x: number = canvas.width = 600;
-let max_y: number = canvas.height = 600;
+let max_x: number = canvas.width = GRID_SIZE;
+let max_y: number = canvas.height = GRID_SIZE;
 let ctx: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-
+let is_init: boolean = false;
+let game_active: boolean = false;
 ctx.fillStyle = BG_COLOUR;
 ctx.fillRect(0, 0, max_x, max_y);
 
@@ -26,14 +29,38 @@ var arrow_keys_handler = function (e: KeyboardEvent) {
 };
 window.addEventListener("keydown", arrow_keys_handler, false);
 
+join_game_btn.addEventListener('click', (e) => {
+    handleJoinGame();
+})
+
+create_game_btn.addEventListener('click', (e) => {
+    handleCreateGame();
+})
+
+reset_game_btn.addEventListener('click', (e) => {
+    socket.emit('restart-game');
+})
+
 console.log("Connected=", socket.active);
 
-socket.on("init", (arg) => console.log("Got this: ", arg));
+// Socket events
+socket.on('game-update', (data) => { 
+    handleGameUpdate(JSON.parse(data)); 
+});
+
+socket.on('game-over', (data) => {
+    handleGameOver(data);
+});
+
+socket.on('game-restart', () => {
+    handleResetGame();
+});
 
 interface GameState {
     grid_size: number;
     players: Array<GamePlayer>;
     is_finish: boolean;
+    player: number;
 }
 
 interface GamePlayer {
@@ -46,59 +73,77 @@ interface GamePlayer {
     is_alive: boolean;
 }
 
-let grid: GameState = {
-    grid_size: 600, players: [
-        { x: 0, y: 0, dx: 0, dy: 0, area: [[0, 0]], color: 'green', is_alive: false }
-    ], is_finish: false
-};
+/* Event Handlers */
+function handleGameUpdate(update: GameState): void {
+    requestAnimationFrame(() => renderGame(ctx, update));
+}
 
-function RenderGame(ctx: CanvasRenderingContext2D, grid: GameState): void {
-    ctx.strokeStyle = 'grey';
-    let size: number = grid.grid_size;
-    for (let r = 0; r < size; r += TILE_SIZE) {
-        for (let c = 0; c < size; c += TILE_SIZE) {
-            ctx.strokeRect(r, c, TILE_SIZE, TILE_SIZE);
+function handleCreateGame(): void {
+    create_game_btn.removeEventListener('click', handleCreateGame);
+    socket.emit('create-game');
+    socket.on('game-code', (code) => {
+        console.log('Created room with code', code);
+        resetGame(ctx);
+        game_alert.classList.remove('invisible');
+        game_alert.style.display = 'flex';
+        game_alert.textContent = 'Created game with code: ' + code;
+    })
+}
+
+function handleJoinGame(): void {
+    let game_code_input: HTMLInputElement = document.getElementById('gameCode') as HTMLInputElement;
+    console.log('Joining game with', game_code_input.value);
+    socket.emit('join-game', game_code_input.value);
+}
+
+function handleGameOver(winner: string): void {
+    game_alert.classList.remove('alert-success');
+    game_alert.classList.add('alert-info');
+    game_alert.classList.remove('invisible');
+    game_alert.textContent = 'Player ' + winner + ' has won!';
+    console.log('The winner is ', winner); 
+    reset_game_btn.classList.remove('invisible');
+}
+
+function handleResetGame(): void {
+    game_alert.classList.add('invisible');
+    reset_game_btn.classList.add('invisible');
+    resetGame(ctx);
+    is_init = false;
+}
+
+function renderGame(ctx: CanvasRenderingContext2D, game: GameState): void {
+    if (!is_init) {
+        ctx.strokeStyle = 'grey';
+        let size: number = game.grid_size;
+        for (let r = 0; r < size; ++r) {
+            for (let c = 0; c < size; ++c) {
+                ctx.strokeRect(r*TILE_SIZE, c*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
         }
+        is_init = true;
     }
-
-    for (let p of grid.players) {
+   for (let p of game.players) {
         ctx.fillStyle = p.color;
-        for(let [x, y] of p.area) {
-            ctx.fillRect(x, y, TILE_SIZE-1, TILE_SIZE-1);
-        } 
-    }
+        ctx.fillRect(p.x*TILE_SIZE, p.y*TILE_SIZE, TILE_SIZE-2, TILE_SIZE-2);
+   }
 }
 
-function UpdateGame(game: GameState): void {
-    for (let p of grid.players) {
-        p.x = (p.x + p.dx * TILE_SIZE) % game.grid_size;
-        p.y = (p.y + p.dy * TILE_SIZE) % game.grid_size;
-        if (p.x < 0) p.x += game.grid_size;
-        if (p.y < 0) p.y += game.grid_size;
-        p.area.push([p.x, p.y]);
-    }
+function resetGame(ctx: CanvasRenderingContext2D): void {
+    ctx.clearRect(0, 0, GRID_SIZE, GRID_SIZE);
+    ctx.fillStyle = BG_COLOUR;
+    ctx.fillRect(0, 0, max_x, max_y)
 }
+
 canvas.addEventListener('keydown', (e) => {
     if (e.code === 'ArrowUp') {
-        grid.players[0].dx = 0;
-        grid.players[0].dy = -1;
+        socket.emit('key-press', 0);
     } else if (e.code === 'ArrowLeft') {
-        grid.players[0].dx = -1;
-        grid.players[0].dy = 0;
+        socket.emit('key-press', 1);
     } else if (e.code === 'ArrowRight') {
-        grid.players[0].dx = 1;
-        grid.players[0].dy = 0;
+        socket.emit('key-press', 2);
     } else if (e.code === 'ArrowDown') {
-        grid.players[0].dx = 0;
-        grid.players[0].dy = 1;
+        socket.emit('key-press', 3);
     }
 });
 canvas.focus();
-ctx.fillStyle = 'red';
-function loop() {
-    UpdateGame(grid);
-    RenderGame(ctx, grid);
-    requestAnimationFrame(loop);
-}
-
-loop();
