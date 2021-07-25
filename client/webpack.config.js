@@ -2,10 +2,6 @@ const path = require('path');
 
 module.exports = {
   entry: './src/main.ts',
-  watch: true,
-  watchOptions: {
-      aggregateTimeout: 100
-  },
   devServer: {
     contentBase: './dist'
   },
