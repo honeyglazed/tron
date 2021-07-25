@@ -6,6 +6,9 @@ module.exports = {
   watchOptions: {
       aggregateTimeout: 100
   },
+  devServer: {
+    contentBase: './dist'
+  },
   module: {
     rules: [
       {

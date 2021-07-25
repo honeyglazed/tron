@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io('127.0.0.1:3000');
+const socket = io('https://tron-backend-763watxteq-uc.a.run.app');
 const game_screen: HTMLElement = document.getElementById('gameScreen') as HTMLElement;
 const join_game_btn: HTMLElement = document.getElementById('joinGame') as HTMLElement;
 const create_game_btn: HTMLElement = document.getElementById('createGame') as HTMLElement;
@@ -44,8 +44,8 @@ reset_game_btn.addEventListener('click', (e) => {
 console.log("Connected=", socket.active);
 
 // Socket events
-socket.on('game-update', (data) => { 
-    handleGameUpdate(JSON.parse(data)); 
+socket.on('game-update', (data) => {
+    handleGameUpdate(JSON.parse(data));
 });
 
 socket.on('game-over', (data) => {
@@ -101,7 +101,7 @@ function handleGameOver(winner: string): void {
     game_alert.classList.add('alert-info');
     game_alert.classList.remove('invisible');
     game_alert.textContent = 'Player ' + winner + ' has won!';
-    console.log('The winner is ', winner); 
+    console.log('The winner is ', winner);
     reset_game_btn.classList.remove('invisible');
 }
 
