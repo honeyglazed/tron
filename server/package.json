@@ -5,6 +5,12 @@
   },
   "devDependencies": {
     "@tsconfig/node12": "^1.0.9",
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.12",
+    "tsc-watch": "^4.4.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./server.js",
+    "dev": "tsc-watch --onSuccess \"node ./server.js\""
   }
 }

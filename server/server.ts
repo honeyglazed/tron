@@ -173,4 +173,12 @@ io.on("connection", (client: Socket) => {
         }
     })
 });
-httpServer.listen(3000, '127.0.0.1', () => { console.log('server started') });
+
+// Start server and listen
+const port = process.env.PORT || 3000;
+const ENV = process.env.NODE_ENV;
+if (ENV == 'prod') {
+    httpServer.listen(port, () => { console.log('production server started listening on port', port) });
+} else {
+    httpServer.listen(3000, '127.0.0.1', () => { console.log('dev server started listening on port', port)});
+}
