@@ -31,14 +31,17 @@ window.addEventListener("keydown", arrow_keys_handler, false);
 
 join_game_btn.addEventListener('click', (e) => {
     handleJoinGame();
+    canvas.focus();
 })
 
 create_game_btn.addEventListener('click', (e) => {
     handleCreateGame();
+    canvas.focus();
 })
 
 reset_game_btn.addEventListener('click', (e) => {
     socket.emit('restart-game');
+    canvas.focus();
 })
 
 console.log("Connected=", socket.active);
